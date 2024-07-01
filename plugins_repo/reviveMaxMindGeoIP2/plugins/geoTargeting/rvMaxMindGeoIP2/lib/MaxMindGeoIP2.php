@@ -10,6 +10,8 @@ class MaxMindGeoIP2
 
     public const GEO = [
         'version' => '2',
+        'ip' => '',
+        'db_version' => '',
         'country' => '',
         'continent' => '',
         'is_in_eu' => '',
@@ -116,20 +118,23 @@ class MaxMindGeoIP2
     {
         $aConf = $GLOBALS['_MAX']['CONF'];
 
+        $ip = $GLOBALS['_MAX']['GEO_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '24.24.24.24';
+        $db_version = (string)filemtime(self::getMmdbPaths());
+        
         // Try and read the data from the geo cookie...
         if ($useCookie && isset($_COOKIE[$aConf['var']['viewerGeo']])) {
             $ret = self::unpackCookie($_COOKIE[$aConf['var']['viewerGeo']]);
-            if (false !== $ret) {
+            if(false !== $ret && ($ret['ip']??'')===$ip && ($ret['db_version']??'')===$db_version) {
                 return $ret;
             }
         }
 
-        $ip = $GLOBALS['_MAX']['GEO_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '24.24.24.24';
-
         $ret = [];
         foreach (self::getReaders() as $reader) {
             $res = $reader->get($ip);
-
+            $ret['ip']=$ip;
+            $ret['db_version']=$db_version;
+            
             if (isset($res['continent']['code'])) {
                 $ret['continent'] = $res['continent']['code'];
             }
